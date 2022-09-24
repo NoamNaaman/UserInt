@@ -37,6 +37,8 @@ void  EnableUartInts(void);
 // Parameters:  
 // Returns:     NONE
 /////////////////////////////////////////////////////////////////////
+#define RX GPIOA,3
+
 void gui_app(void)
   {
   char buf[22];
@@ -45,41 +47,47 @@ void gui_app(void)
   ssd1306_Init();
   
   EnableUartInts();
+  
+//  output_float(RX);
 
-  clear_screen();
-  put_string(0, 0, 18, "Hello");
+//  clear_screen();
+//  put_string(0, 0, 18, "Hello");
   
-  delay_ms(2000);
+//  delay_ms(2000);
   
   
-  clear_screen();
+//  clear_screen();
   
   while (1)
     {
     HandleHostcommands();
     HandleButtons();
-    for (u32 btn = 0; btn < 3; btn++)
-      {
-      if (button_flag[btn])
-        {
-        button_flag[btn] = 0;
-        clear_screen();
+//    for (u32 btn = 0; btn < 3; btn++)
+//      {
+//      if (button_flag[btn])
+//        {
+//        button_flag[btn] = 0;
+//        clear_screen();
 //        sprintf(buf, "Button %d", btn+1);
 //        put_string(0, 0, 10, buf);
-        if (btn == 0)
-          {
-          put_string(0, 0, 18, "Button 1");
-          }
-        else if (btn == 1)
-          {
-          put_string(0, 0, 18, "Button 2");
-          }
-        else
-          {
-          put_string(0, 0, 18, "Button 3");
-          }
-        }
-      }
+//        if (btn == 0)
+//          {
+//          put_string(0, 0, 18, "Button 1");
+//          }
+//        else if (btn == 1)
+//          {
+//          put_string(0, 0, 18, "Button 2");
+//          }
+//        else
+//          {
+//          put_string(0, 0, 18, "Button 3");
+//          }
+//        }
+//      }
+//    if (input(RX) == 0)
+//      {
+//      __NOP();
+//      }
     }
   }
 
@@ -303,8 +311,8 @@ void DrawCircle(void)
 void ProcessHostcommand(void)
   {
   char chr;
-  MsgPtr = 0;
-  chr = get_char();
+  comm_ptr = 0;
+  chr = get_char(); // get command type
   switch (chr)
     {
     case 'E': clear_screen(); break;
@@ -324,7 +332,11 @@ void ProcessHostcommand(void)
 void HandleHostcommands(void)
   {
   char chr;
-  while (HostChars())
+  if ((USART1->ISR & USART_ISR_RXNE) != 0)
+    {
+    USART1_IRQHandler();
+    }
+  if (HostChars())
     {
     chr = HostGetChar();
     switch (HostMsgState)
@@ -332,6 +344,7 @@ void HandleHostcommands(void)
       case HOST_MSG_START: 
         if (chr == '$')
           {
+          comm_ptr = 0;
           HostMsgState = HOST_MSG_CONT;
           }
         break;
